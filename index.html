@@ -1,0 +1,171 @@
+<html>
+<head>
+	<title>Chat with socket.io and node.js</title>
+	<style>
+		#chat{
+			height:500px;
+		}
+		#contentWrap{
+			display: none;
+		}
+		#chatWrap{
+			float: left;
+			border: 1px #000 solid;
+		}
+		#canvas
+		{
+			width: 500px;
+			height: 500px;
+			border: 1px #000 solid;
+			margin: auto;
+		}
+	</style>
+</head>
+<body>
+	<div id="nickWrap">
+		<p>Enter a username:</p>
+		<p id="nickError"></p>
+		<form id="setNick">
+			<input size="35" id="nickname"></input>
+			<input type="submit"></input>
+		</form>
+	</div>
+
+	<div id="contentWrap">
+		<table>
+			<tr>
+				<td>
+					<div id="chatWrap">
+						<div id="chat"></div>
+						<form id="send-message">
+							<input size="35" id="message"></input>
+							<input type="submit"></input>
+						</form>
+					</div>
+				</td>
+				<td>
+					<div id="users"></div>
+				</td>
+				<td>
+					<canvas id="canvas"></canvas>
+				</td>
+			</tr>
+		</table>
+	</div>
+	<script src="http://code.jquery.com/jquery-latest.min.js"></script>
+	<!-- you might need to change this line to get it to run Jose -->
+	<script src="http://localhost:3000/socket.io/socket.io.js"></script>
+	<script>
+		var connection;
+		var canvas = document.getElementById("canvas");
+		canvas.width = 500;
+		canvas.height = 500;
+		var context = canvas.getContext('2d');
+
+		jQuery(function($){
+			draw();
+
+
+			//socket io code. chat app will send username to server
+			// server will keep list of name and display them in/out connect
+
+
+			var socket = io.connect();
+			var $nickForm = $('#setNick');
+			var $nickError = $('#nickError');
+			var $nickBox = $('#nickname');
+			var $users = $('#users');
+			var $messageForm = $('#send-message');
+			var $messageBox = $('#message');
+			var $chat = $('#chat');
+			
+			$nickForm.submit(function(e){
+				e.preventDefault();
+				socket.emit('new user', $nickBox.val(), function(data){
+					if(data){
+						$('#nickWrap').hide();
+						$('#contentWrap').show();
+					} else{
+						$nickError.html('That username is already taken!  Try again.');
+					}
+				});
+				$nickBox.val('');
+			});
+			
+			socket.on('usernames', function(data){
+				var html = '';
+				console.log(data.length);
+				connection = new Array();
+				for(i=0; i < data.length; i++)
+				{
+					connection[i] = 1;
+				}
+				for(i=0; i < data.length; i++){
+					html += data[i] + '<br/>'
+				}
+				$users.html(html);
+				draw();
+			});
+			
+			$messageForm.submit(function(e){
+				e.preventDefault();
+				socket.emit('send message', $messageBox.val());
+				$messageBox.val('');
+			});
+			
+			socket.on('new message', function(data){
+				$chat.append('<b>' + data.nick + ': </b>' + data.msg + "<br/>");
+			});
+		});
+
+
+		// main stuff that draw the canvas
+		function draw()
+		{
+			var img = new Image();
+			context.clearRect(0, 0, canvas.width, canvas.height);
+			img.onload = function(){
+
+				var midX = canvas.width/2,
+					midY = canvas.height/2;
+				
+				//5 is offset from screen alittle bit, connect array whole the user that connect in
+				for(var i = 0; i < 25;i++)
+				{
+					drawline(context,20*i + 5,midX,400,midY);
+					drawCircle(context,20*i + 5,400,connection[i])
+				}
+			
+
+				context.drawImage(img,midX-50,midY - 50, 100,100);
+			}
+
+			img.src = 'http://dcplive.dekalblibrary.org/wp-content/uploads/computer.jpg'
+		}
+
+		function drawline(context, x1, x2, y1, y2)
+		{
+			context.beginPath();
+			context.moveTo(x1,y1);
+			context.lineTo(x2,y2);
+			context.stroke();
+		}
+
+		function drawCircle(context, x, y, color)
+		{
+			context.beginPath();
+		    context.arc(x, y, 5, 0, 2 * Math.PI, false);
+		    if(color == 1)
+		    	context.fillStyle = 'green';
+		    else
+		    	context.fillStyle = 'red';
+		    context.fill();
+		    context.lineWidth = 2;
+		    context.strokeStyle = '#003300';
+		    context.stroke();
+		}
+
+		
+	</script>
+</body>
+</html>
