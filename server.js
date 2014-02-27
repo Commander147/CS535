@@ -1,5 +1,8 @@
 var app = require('express')();
-var io = require('socket.io').listen(app.listen(3000));
+var server = require('http').createServer(app);
+var io = require('socket.io').listen(server);
+
+server.listen(3000);
 
 var nodes = new Array();
 
@@ -9,8 +12,9 @@ app.get('/', function (req, res) {
 
 io.sockets.on('connection', function (socket) {
 	nodes.push(socket.id);
-	socket.emit('news', JSON.stringify(nodes));
-	socket.on('my other event', function (data) {
+	socket.emit('send', JSON.stringify(nodes));
+	socket.on('send message', function (data) {
+		socket.emit('new message', data);
 		console.log(data);
 	});
 

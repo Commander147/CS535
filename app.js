@@ -10,6 +10,10 @@ app.get('/', function(req, res){
 	res.sendfile(__dirname + '/index.html');
 });
 
+//parallel section
+var numNode = 10;
+var total_time = numNode * 100000;
+
 io.sockets.on('connection', function(socket){
 	socket.on('new user', function(data, callback){
 		if (nicknames.indexOf(data) != -1){
@@ -19,9 +23,15 @@ io.sockets.on('connection', function(socket){
 			socket.nickname = data;
 			nicknames.push(socket.nickname);
 			updateNicknames();
+			io.sockets.emit('userlogin');
+
 		}
 	});
-	
+
+	socket.on('update time', function(data){
+		io.sockets.emit('time',data);
+	});	
+
 	function updateNicknames(){
 		io.sockets.emit('usernames', nicknames);
 	}

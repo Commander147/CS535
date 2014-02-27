@@ -47,7 +47,7 @@
 					<div id="users"></div>
 				</td>
 				<td>
-					<canvas id="canvas"></canvas>
+					<canvas id="canvas" style="display:none"></canvas>
 				</td>
 			</tr>
 		</table>
@@ -56,19 +56,20 @@
 	<!-- you might need to change this line to get it to run Jose -->
 	<script src="http://localhost:3000/socket.io/socket.io.js"></script>
 	<script>
-		var connection;
+		var connection, user = undefined;
+		var time= 10*100000;
 		var canvas = document.getElementById("canvas");
-		canvas.width = 500;
-		canvas.height = 500;
+		canvas.width = 800;
+		canvas.height = 600;
 		var context = canvas.getContext('2d');
 
 		jQuery(function($){
-			draw();
+			//draw();
 
 
 			//socket io code. chat app will send username to server
 			// server will keep list of name and display them in/out connect
-
+			
 
 			var socket = io.connect();
 			var $nickForm = $('#setNick');
@@ -79,8 +80,17 @@
 			var $messageBox = $('#message');
 			var $chat = $('#chat');
 			
+			
+			setInterval(function(){
+				drawTime(time-=5);
+			},5000);
+			
 			$nickForm.submit(function(e){
 				e.preventDefault();
+				if($nickBox.val() == 'master')
+				{
+					document.getElementById("canvas").style.display = "block";
+				}
 				socket.emit('new user', $nickBox.val(), function(data){
 					if(data){
 						$('#nickWrap').hide();
@@ -92,17 +102,23 @@
 				$nickBox.val('');
 			});
 			
+			socket.on('userlogin', function(){
+				time = time-100000;
+			});
 			socket.on('usernames', function(data){
 				var html = '';
 				console.log(data.length);
 				connection = new Array();
+				user = new Array();
 				for(i=0; i < data.length; i++)
 				{
 					connection[i] = 1;
 				}
 				for(i=0; i < data.length; i++){
-					html += data[i] + '<br/>'
+					user[i] = data[i];
+					html += data[i] + '<br/>';
 				}
+				
 				$users.html(html);
 				draw();
 			});
@@ -113,6 +129,11 @@
 				$messageBox.val('');
 			});
 			
+			socket.on('time', function(data){
+				time = data;
+				drawTime();
+			});
+
 			socket.on('new message', function(data){
 				$chat.append('<b>' + data.nick + ': </b>' + data.msg + "<br/>");
 			});
@@ -127,17 +148,18 @@
 			img.onload = function(){
 
 				var midX = canvas.width/2,
-					midY = canvas.height/2;
+				midY = canvas.height/2;
 				
-				//5 is offset from screen alittle bit, connect array whole the user that connect in
-				for(var i = 0; i < 25;i++)
+				var interval=canvas.width/10;
+				//20 is offset from screen alittle bit, connect array whole the user that connect in
+				for(var i = 0; i < 10;i++)
 				{
-					drawline(context,20*i + 5,midX,400,midY);
-					drawCircle(context,20*i + 5,400,connection[i])
+					drawline(context,interval*i + 20,midX,400,midY);
+					drawCircle(context,interval*i + 20,400,connection[i],user[i]);
 				}
 			
 
-				context.drawImage(img,midX-50,midY - 50, 100,100);
+				context.drawImage(img,midX-75,midY - 75, 150,150);
 			}
 
 			img.src = 'http://dcplive.dekalblibrary.org/wp-content/uploads/computer.jpg'
@@ -151,9 +173,16 @@
 			context.stroke();
 		}
 
-		function drawCircle(context, x, y, color)
+		function drawTime(time)
 		{
-			context.beginPath();
+		    context.clearRect(0,0,800,100);
+		    context.font = "30px Arial";
+		    context.fillStyle = 'blue';
+		    context.fillText("Time Remaining = " + time,250, 50);
+		}
+		function drawCircle(context, x, y, color,name)
+		{
+		    context.beginPath();
 		    context.arc(x, y, 5, 0, 2 * Math.PI, false);
 		    if(color == 1)
 		    	context.fillStyle = 'green';
@@ -163,9 +192,13 @@
 		    context.lineWidth = 2;
 		    context.strokeStyle = '#003300';
 		    context.stroke();
+		    context.font = "15px Arial";
+		    if(name)
+		    {
+			context.fillStyle = 'blue';
+			context.fillText(name,x-10, y+30);
+		    }
 		}
-
-		
 	</script>
 </body>
 </html>
