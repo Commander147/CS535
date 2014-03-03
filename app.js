@@ -23,7 +23,7 @@ io.sockets.on('connection', function(socket){
 			socket.nickname = data;
 			nicknames.push(socket.nickname);
 			updateNicknames();
-			io.sockets.emit('userlogin');
+			io.sockets.emit('userlogin',nicknames.length);
 
 		}
 	});
@@ -42,6 +42,7 @@ io.sockets.on('connection', function(socket){
 	
 	socket.on('disconnect', function(data){
 		if(!socket.nickname) return;
+		io.sockets.emit('userlogout',nicknames.indexOf(socket.nickname));
 		nicknames.splice(nicknames.indexOf(socket.nickname), 1);
 		updateNicknames();
 	});

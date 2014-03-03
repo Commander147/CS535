@@ -36,9 +36,9 @@
 			<tr>
 				<td>
 					<div id="chatWrap">
-						<div id="chat"></div>
-						<form id="send-message">
-							<input size="35" id="message"></input>
+						<div id="chat"  style="display:none"></div>
+						<form id="send-message"  style="display:none">
+							<input size="35" id="message"  ></input>
 							<input type="submit"></input>
 						</form>
 					</div>
@@ -56,8 +56,10 @@
 	<!-- you might need to change this line to get it to run Jose -->
 	<script src="http://localhost:3000/socket.io/socket.io.js"></script>
 	<script>
-		var connection, user = undefined;
-		var time= 10*100000;
+		var connection, user , time = undefined;
+		var time=1000000;
+		var Interval = 100;
+		var userArr = new Array(10);
 		var canvas = document.getElementById("canvas");
 		canvas.width = 800;
 		canvas.height = 600;
@@ -65,6 +67,10 @@
 
 		jQuery(function($){
 			//draw();
+			for(var i = 0; i < 10; i++)
+			{
+				userArr[i] = 0;
+			}
 
 
 			//socket io code. chat app will send username to server
@@ -80,16 +86,26 @@
 			var $messageBox = $('#message');
 			var $chat = $('#chat');
 			
-			
 			setInterval(function(){
-				drawTime(time-=5);
-			},5000);
+				drawTime(time-=Interval);
+			},1000);
 			
+			function sum()
+			{
+				var sum = 0;
+				console.log(userArr);
+				console.log(Interval);
+				for(var i = 0; i < 10; i++)
+					sum += userArr[i];
+				return sum;
+			}			
+
 			$nickForm.submit(function(e){
 				e.preventDefault();
 				if($nickBox.val() == 'master')
 				{
 					document.getElementById("canvas").style.display = "block";
+					
 				}
 				socket.emit('new user', $nickBox.val(), function(data){
 					if(data){
@@ -102,12 +118,23 @@
 				$nickBox.val('');
 			});
 			
-			socket.on('userlogin', function(){
-				time = time-100000;
+			socket.on('userlogin', function(data){
+				userArr[data-1] = Math.floor((Math.random()*8+1)*100);
+				Interval = sum();
+				
 			});
+
+			socket.on('userlogout', function(data){
+				userArr[data] = 0;
+				for(var i = data; i < 10; i++)
+					userArr[i]=userArr[i+1];
+				userArr[9] = 0;
+				Interval = sum();
+			});
+
 			socket.on('usernames', function(data){
 				var html = '';
-				console.log(data.length);
+				//console.log(data.length);
 				connection = new Array();
 				user = new Array();
 				for(i=0; i < data.length; i++)
@@ -118,7 +145,7 @@
 					user[i] = data[i];
 					html += data[i] + '<br/>';
 				}
-				
+				Interval = sum();
 				$users.html(html);
 				draw();
 			});
@@ -175,10 +202,13 @@
 
 		function drawTime(time)
 		{
+		    if(time <= 0)
+			time = 0;
 		    context.clearRect(0,0,800,100);
 		    context.font = "30px Arial";
 		    context.fillStyle = 'blue';
 		    context.fillText("Time Remaining = " + time,250, 50);
+		    context.fillText("Power Resources = " + Interval,250, 100);
 		}
 		function drawCircle(context, x, y, color,name)
 		{
